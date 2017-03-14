@@ -1,0 +1,429 @@
+<?php
+$Game = new Game;
+
+$s =$_REQUEST["s"];
+$c =$_REQUEST["c"];
+
+if($s==1){
+    $Game->ButtonClick();
+    $s = 0;
+}
+
+if($c!=""){
+    $Game->ClickCell($c);
+    $c = "";
+}
+?>
+<?php
+class Game
+{
+
+    private $_Speelveld;
+    private $_Button;
+    private $_Beurt;
+    private $_Scores;
+    private $_Round;
+    private $_player1;
+    private $_player2;
+
+    public function Game(){
+        $this->Start();
+    }
+
+    public function Start(){
+        include 'button.php';
+        include 'beurt.php';
+        include 'scores.php';
+        include 'round.php';
+        include 'speelveld.php';
+        include 'player.php';
+
+        $this->_Button = new Button();
+        $this->_Beurt = new Beurt();
+        $this->_Scores = new Scores();
+        $this->_Round = new Round();
+        $this->_Speelveld = new Speelveld();
+        $this->_player1 = new Player("img/cross","0");
+        $this->_player2 = new Player("img/circle","1");
+    }
+
+    public function ButtonClick(){
+        include 'button.php';
+        include 'speelveld.php';
+        if($this->_Button->getStarted() == 0){
+
+            $this->_Button->setButton('Stop Spel');
+            $this->_Button->setStarted(1);
+            $this->_Speelveld->Lockcel();
+        }else{
+            $this->_Button->setButton('reset Spel');
+            $this->CleanField();
+        }
+    }
+
+    public function CleanField(){
+        include 'button.php';
+        include 'speelveld.php';
+        include 'beurt.php';
+        include 'round.php';
+
+        $this->_Button->setStarted(0);
+        $this->_Speelveld->Unlockcel();
+        $this->_Speelveld->ResetField();
+        $this->_Beurt->setTurn(0);
+        $this->_Round->AddRound();
+        $this->_Beurt->setBeurt(0);
+    }
+
+    public function ClickCell($Id){
+        Switch($Id){
+            case '[0][0]':
+                $CN = 0;
+                break;
+            case '[0][1]':
+                $CN = 1;
+                break;
+            case '[0][2]':
+                $CN = 2;
+                break;
+            case '[1][0]':
+                $CN = 3;
+                break;
+            case '[1][1]':
+                $CN = 4;
+                break;
+            case '[1][2]':
+                $CN = 5;
+                break;
+            case '[2][0]':
+                $CN = 6;
+                break;
+            case '[2][1]':
+                $CN = 7;
+                break;
+            case '[2][2]':
+                $CN = 8;
+                break;
+        }
+        include 'speelveld.php';
+        $PD = array($this->getCellsData()[0],$this->getCellsData()[1]);
+        $this->_Speelveld->setCell($PD[0],$PD[1],$CN,$Id);
+        $this->WinCondition();
+    }
+
+    public function WinCondition(){
+        include 'speelveld.php';
+        $C1=$this->_Speelveld->getCells()[0];
+        $C2=$this->_Speelveld->getCells()[1];
+        $C3=$this->_Speelveld->getCells()[2];
+        $C4=$this->_Speelveld->getCells()[3];
+        $C5=$this->_Speelveld->getCells()[4];
+        $C6=$this->_Speelveld->getCells()[5];
+        $C7=$this->_Speelveld->getCells()[6];
+        $C8=$this->_Speelveld->getCells()[7];
+        $C9=$this->_Speelveld->getCells()[8];
+
+
+        if(($C1==$C2&&$C1!=3&&$C1==$C3)||($C4==$C5&&$C4!=3&&$C4==$C6)||($C7==$C8&&$C7!=3&&$C7==$C9)){
+            $message = "Horizontaal Winst";
+            echo "<script type='text/javascript'>alert('$message');</script>";
+
+            $this->Addscore();
+            $this->_Speelveld->LockCel();
+        }
+        if(($C1==$C4&&$C1!=3&&$C1==$C7)||($C2==$C5&&$C2!=3&&$C2==$C8)||($C3==$C6&&$C3!=3&&$C3==$C9)){
+            $message = "Vertical Winst";
+            echo "<script type='text/javascript'>alert('$message');</script>";
+
+            $this->Addscore();
+            $this->_Speelveld->LockCel();
+        }
+        if(($C1==$C5&&$C1!=3&&$C1==$C9)||($C3==$C5&&$C3!=3&&$C3==$C7)){
+            $message = "Schuin Winst";
+            echo "<script type='text/javascript'>alert('$message');</script>";
+
+            $this->Addscore();
+            $this->_Speelveld->LockCel();
+
+        }
+        if($this->_Beurt->getBeurt()<9){}else{
+            $message = "Gelijk Spel";
+            echo "<script type='text/javascript'>alert('$message');</script>";
+            $this->Addscore();
+            $this->_Speelveld->LockCel();
+        }
+    }
+
+
+
+    public function getCellsData(){
+        include 'round.php';
+        include 'player.php';
+
+        if($this->_Round->getRound()==0) {
+            return $this->_player1->getPlayerData();
+        }else{
+            return $this->_player2->getPlayerData();
+        }
+    }
+
+    public function Addscore(){
+        include 'beurt.php';
+        include 'button.php';
+        include 'scores.php';
+
+        if($this->_Beurt->getBeurt()==0){
+            $this->_Scores->wonRound($this->getBuert());
+        }else{
+            $this->_Scores->gelijkSpel($this->getBuert());
+        }
+        $this->_Button->setButton('Nog een keer :D');
+    }
+}
+?>
+
+<?php
+class Round extends Game{
+
+    public $_Round;
+
+    public function Round(){
+        $this->_Round = 0;
+    }
+    public function getRound()
+    {
+        return $this->_Round;
+    }
+    public function addRound()
+    {
+        ++$this->_Round;
+    }
+}
+
+?>
+
+<?php
+class Player extends Game{
+
+    private $_img;
+    private $_value;
+
+
+    public function Player($a,$b){
+        $this->_img = $a;
+        $this->_value = $b;
+    }
+
+    public function getPlayerData(){
+        return array($this->getImg(),$this->getValue());
+    }
+
+    public function getImg()
+    {
+        return $this->_img;
+    }
+
+
+    public function getValue()
+    {
+        return $this->_value;
+    }
+}
+
+?>
+
+<?php
+class Button extends Game
+{
+    private $_Started = 0;
+    private $_Button = 'Start Spel';
+
+
+    public function setStarted($Started)
+    {
+        $this->_Started = $Started;
+    }
+
+    public function setButton($Button)
+    {
+        $this->_Button = $Button;
+        echo "<script type='text/javascript'>document.getElementsByClassName('game-button')[0].innerHTML='$Button';</script>";
+    }
+
+    public function getButton()
+    {
+        return $this->_Button;
+    }
+
+    public function getStarted()
+    {
+        return $this->_Started;
+    }
+
+}
+class Speelveld extends Game
+{
+    private $_Cells = array(1,2,3,4,5,6,7,8,9);
+    private $_Locked;
+
+    public  function UnLockCel(){
+        $this->_Locked = false;
+    }
+    public function SetCell($a,$b,$c,$d){
+        include 'cells.php';
+        $this->_Cells[$c]->SetCell($a,$b,$d);
+    }
+    public function getCells(){
+        include 'cells.php';
+        for($x=0;$x<9;++$x){
+            $xa = array();
+            return $xa[$x] = $this->_Cells[$x]->GetPlayer();
+        }
+    }
+
+    public function LockCel(){
+        $this -> _Locked = true;
+    }
+
+    public function __construct()
+    {
+        include 'cells.php';
+        for ($x = 0; $x < 9; ++$x) {
+            $this->_Cells[$x] = new Cells(); //volgens mij is dit correct
+        }
+    }
+    public function ResetField(){
+        include 'cells.php';
+        for ($x = 0; $x < 9; ++$x) {
+            $this->_Cells[$x]->BlankCel($x);
+        }
+    }
+}
+?>
+
+<?php
+class Cells extends Speelveld
+{
+
+    private $_Img;
+    private $_Player;
+
+    public function GetPlayer(){
+        return $this->_Player;
+    }
+
+    public function __construct(){ //volgenmij klopt deze wel
+        $this->_Img = "img/both";
+        $this->_Player = 3;
+    }
+
+    public function setCell($a,$b,$c){
+        $this->_Img = $a;
+        $this->_Player = $b;
+        echo "<script type='text/javascript'>document.getElementById('$c').src='$a +.jpg';</script>";
+    }
+
+    public function BlankField($x){
+        $this->_Player = 3;
+        $this->_Img = "img/empty";
+        echo "<script type='text/javascript'>document.getElementById('speelveld').getElementsByTagName('td')[$x].src='img/empty.jpg';</script>";
+    }
+
+}
+?>
+
+<?php
+class Scores extends Game{
+    private $_ScoreP1 = 0;
+    private $_ScoreP2 = 0;
+
+    public function getScoreP1()
+    {
+        return $this->_ScoreP1;
+    }
+
+    public function getScoreP2()
+    {
+        return $this->_ScoreP2;
+    }
+
+    public function wonRound($a){
+        switch($a){
+            case 0: $this->_ScoreP1 = $this->_ScoreP1 +2;
+                break;
+            case 1: $this->_ScoreP2 = $this->_ScoreP2 +2;
+                break;
+        }
+        $this->UpdateScore();
+    }
+
+    public function gelijkSpel(){
+        $this->_ScoreP1 = $this->_ScoreP1 + 1;
+        $this->_ScoreP2 = $this->_ScoreP2 + 1;
+        $this->UpdateScore();
+    }
+
+    public function UpdateScore(){
+        echo "<script type='text/javascript'>
+                    document.getElementById('XScore').innerHTML='$this->_ScoreP1';
+                    document.getElementById('OScore').innerHTML='$this->_ScoreP2';
+              </script>";
+    }
+}
+
+?>
+
+<?php
+class Beurt extends Game{
+
+    private $_Beurt = 0;
+    private $_Turn = 0;
+
+    public function getBeurt()
+    {
+        return $this->_Beurt;
+    }
+    public function setBuert($Beurt){
+        $this->_Beurt = $Beurt;
+        echo "<script type='text/javascript'>document.getElementById('PNTurn').innerHTML ='$Beurt+1'</script>";
+        if($Beurt == 0){
+            echo "<script type='text/javascript'>document.getElementById('PPTurn').src='img/cross.jpg';</script>";
+        } else {
+            echo "<script type='text/javascript'>document.getElementById('PPTurn').src='img/circle.jpg';</script>";
+        }
+    }
+
+    public function nextBeurt(){
+        if($this->_Beurt == 0) {
+            $this->_Beurt = 1;
+            echo "<script type='text/javascript'>
+                document.getElementById('PPTurn').src='img/cross.jpg';
+				document.getElementById('PNTurn').innerHTML = 1;
+                  </script>";
+        } else {
+            $this->_Beurt = 0;
+            echo "<script type='text/javascript'>
+                document.getElementById('PPTurn').src='img/circle.jpg';
+				document.getElementById('PNTurn').innerHTML = 2;
+                  </script>";
+        }
+    }
+    public function getTurn(){
+        return $this->_Turn;
+    }
+
+    public function setTurn($Turn){
+        $this->_Turn = $Turn;
+        echo "<script type='text/javascript'>document.getElementById('Round').innerHTML = '$Turn';</script>";
+    }
+
+    public function addTurn(){
+        $this->_Turn = $this->_Turn+1;
+        echo "<script type='text/javascript'>document.getElementById('Round').innerHTML = '$this->_Turn';</script>";
+    }
+
+
+}
+
+?>
+
